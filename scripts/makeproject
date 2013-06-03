@@ -1,12 +1,94 @@
 #!/usr/bin/env python
 import sys
 import os
+from subprocess import check_call
 
 CONFIG = {}
+
+def error():
+    print "error, exiting"
+    exit(1)
 
 # Create project name and slug from command line parameters
 name = " ".join(sys.argv[1:])
 slug = "-".join(sys.argv[1:]).lower()
 
+# folder
+folder = "./"+slug
+
 print name
 print slug
+print folder
+
+if os.path.exists(folder):
+    error()
+else:
+    os.makedirs(folder+'/templates')
+
+flaskapp = """from flask import Flask, render_template
+app = Flask(__name__)
+
+@app.route("/")
+def index():
+    return render_template('index.html')
+
+if __name__ == "__main__":
+    app.run()
+"""
+
+indextemp = """<!doctype html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>{{ %(name)s }} &mdash; {{ title|safe }}</title>
+  </head>
+  <body>
+    <div id="wrapper">
+      <div id="header">
+        <div class="container">
+          <h1>%(name)s</h1>
+          <hr />
+        </div>
+      </div>
+     
+      <div id="content">
+        <div class="container">
+          {%% block content %%}{%% endblock %%}
+        </div>
+      </div>
+      
+    </div>
+    <div id="footer">
+      <div class="container">
+        <hr />
+        <p class="pull-right"><a href="#">Back to top</a></p>
+      </div>
+    </div>
+  </body>
+</html>""" % {"name": name}
+
+pipreq = """Flask==0.9
+Jinja2==2.6
+Werkzeug==0.8.3
+argparse==1.2.1
+distribute==0.6.24
+feedparser==5.1.3
+gunicorn==0.17.2
+redis==2.7.2
+wsgiref==0.1.2
+"""
+
+with open(folder+'/app.py', 'w') as f:
+    f.write(flaskapp)
+
+with open(folder+'/templates/index.html', 'w') as f:
+    f.write(indextemp)
+
+with open(folder+'/requirements.txt', 'w') as f:
+    f.write(pipreq)
+
+
+check_call(["/usr/bin/virtualenv && mkvirtualenv", slug], shell=True)
